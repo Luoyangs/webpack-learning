@@ -167,3 +167,85 @@ ele.appendChild(image)
 ```
 npm run build
 ```
+
+## 4.管理输出
+到目前为止，我们在 index.html 文件中手动引入所有资源，然而随着应用程序增长，并且一旦开始对文件名使用哈希(hash)]并输出多个 bundle，手动地对 index.html 文件进行管理，一切就会变得困难起来。然而，可以通过一些插件，会使这个过程更容易操控。
+
+### 1.预先准备
+在src下面添加一个print.js
+```js
+export default function printMe() {
+  console.log('I get called from print.js')
+}
+```
+
+在index.js里面引入
+```js
+import printMe from './print'
+
+...
+let btn = document.createElement('button')
+btn.innerHTML = 'Click it And Print'
+btn.addEventListener('click', printMe)
+ele.appendChild(btn)
+...
+```
+
+在webpack.config.js里面配entry和output
+```js
+entry: {
+  app: './src/index.js',
+  print: './src/print.js'
+},
+output: {
+  filename: '[name].bundle.js',
+  path: path.resolve(__dirname, 'dist')
+}
+```
+
+在dist/index.html里面修改script标签
+```HTML
+<script src="print.bundle.js"></script>
+<script src="app.bundle.js"></script>
+```
+
+### 2.查看效果
+```
+npm run build
+```
+可以看到dist下面生成了app.bundle.js和print.bundle.js两个文件，用浏览器打开dist/index.html，可以看到最终效果
+
+### 3.设定HtmlWebpackPlugin
+安装依赖包
+```
+npm i html-webpack-plugin -D
+```
+
+在package.config.js里面配置plugins
+```js
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+...
+plugins [
+  new HtmlWebpackPlugin({
+    title: 'Output Management'
+  })
+]
+```
+
+### 4.清理dist文件夹
+安装依赖包
+```
+npm i clean-webpack-plugin -D
+```
+
+在package.config.js里面配置plugins
+```js
+const CleanWebpackPlugin = require('clean-webpack-plugin')
+...
+plugins [
+  new CleanWebpackPlugin(['dist])
+]
+```
+
+### 5.Manifest
+TODO: this is a todo part
