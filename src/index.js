@@ -18,7 +18,21 @@ function component() {
   btn.addEventListener('click', printMe)
   ele.appendChild(btn)
 
-  return ele;
+  return ele
 }
 
-document.body.appendChild(component())
+// document.body.appendChild(component())
+
+// 当 print.js 改变导致页面重新渲染时，重新获取渲染的元素
+let element = component()
+document.body.appendChild(element)
+
+if (module.hot) {
+  module.hot.accept('./print.js', () => {
+    console.log('Accetping the updated printMe module')
+    // printMe()
+    document.body.removeChild(element)
+    element = component()
+    document.body.appendChild(element)
+  })
+}

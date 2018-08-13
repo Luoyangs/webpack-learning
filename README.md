@@ -243,7 +243,7 @@ npm i clean-webpack-plugin -D
 const CleanWebpackPlugin = require('clean-webpack-plugin')
 ...
 plugins [
-  new CleanWebpackPlugin(['dist])
+  new CleanWebpackPlugin(['dist'])
 ]
 ```
 
@@ -345,4 +345,39 @@ app.listen(3000, function () {
 查看效果
 ```
 npm run server
+```
+打开浏览器，跳转到 http://localhost:3000，你应该看到你的webpack 应用程序已经运行！
+
+## 6. 模块热替换
+模块热替换(Hot Module Replacement 或 HMR)是 webpack 提供的最有用的功能之一。它允许在运行时更新各种模块，而无需进行完全刷新。本页面重点介绍实现，而[概念页面](https://www.webpackjs.com/concepts/hot-module-replacement/)提供了更多关于它的工作原理以及为什么它有用的细节。
+
+HMR 不适用于生产环境，这意味着它应当只在开发环境使用
+### 6.1 启用HRM
+在webpack.config.js里面引入webpack,并修改entry、devServer、plugins
+```js
+const webpack = require('webpack')
+
+...
+entry: {
+  app: './src/index.js'
+},
+devServer: {
+  contentBase: './dist',
+  hot: true
+},
+plugins: [
+  ...
+  new webpack.NamedModulesPlugin(), // 以便更容易查看要修补的依赖
+  new webpack.HotModuleReplacementPlugin()
+]
+```
+修改src/index.js
+```js
+...
+if (module.hot) {
+  module.hot.accept('./print.js', () => {
+    console.log('Accepting the updated printMe modules')
+    printMe()
+  })
+}
 ```
