@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "start": "",
+    "build": "webpack",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
