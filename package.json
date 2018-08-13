@@ -1,0 +1,26 @@
+{
+  "name": "webpack-learning",
+  "version": "1.0.0",
+  "description": "### Install Description ``` npm i webpack -D ```",
+  "private": true,
+  "scripts": {
+    "start": "",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Luoyangs/webpack-learning.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Luoyangs/webpack-learning/issues"
+  },
+  "homepage": "https://github.com/Luoyangs/webpack-learning#readme",
+  "devDependencies": {
+    "lodash": "^4.17.10",
+    "webpack": "^4.16.5",
+    "webpack-cli": "^3.1.0"
+  }
+}
