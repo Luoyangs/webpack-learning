@@ -561,3 +561,110 @@ if (process.env.NODE_ENV !== 'production') {
   console.log('Looks like we are in development mode!')
 }
 ```
+
+## 9. 代码分离
+有三种常用的代码分离方法：
+
+- 入口起点：使用 entry 配置手动地分离代码。
+- 防止重复：使用 CommonsChunkPlugin 去重和分离 chunk。
+- 动态导入：通过模块的内联函数调用来分离代码。
+
+### 9.1 入口起点方式
+这是迄今为止最简单、最直观的分离代码的方式。不过，这种方式手动配置较多，并有一些陷阱，我们将会解决这些问题。先来看看如何从 main bundle 中分离另一个模块
+
+在src下创建一个js文件
+```js
+// another-module.js
+import _ from 'lodash'
+
+console.log(_.join(['Another', 'module'], '--'))
+```
+
+在webpack.config.base.js里面添加entry
+```js
+another: './src/another-module.js'
+```
+正如前面提到的，这种方法存在一些问题:
+- 如果入口 chunks 之间包含重复的模块，那些重复模块都会被引入到各个 bundle 中。
+- 这种方法不够灵活，并且不能将核心应用程序逻辑进行动态拆分代码。
+
+以上两点中，第一点对我们的示例来说无疑是个问题，因为之前我们在 ./src/index.js 中也引入过 lodash，这样就在两个 bundle 中造成重复引用。接着，我们通过使用 CommonsChunkPlugin 来移除重复的模块。
+
+#### 9.1.1 防止重复(prevent duplication)
+CommonsChunkPlugin 插件可以将公共的依赖模块提取到已有的入口 chunk 中，或者提取到一个新生成的 chunk。让我们使用这个插件，将之前的示例中重复的 lodash 模块去除：
+
+> CommonsChunkPlugin 已弃用，使用optimization.splitChunks代替.提取被重复引入的文件，单独生成一个或多个文件，这样避免在多入口重复打包文件
+配置项
+- 1 . cacheGroups 自定义配置主要使用它来决定生成的文件
+  - test 限制范围，可以是正则，匹配文件夹或文件
+  - name 生成文件名
+  - priority 优先级，多个分组冲突时决定把代码放在哪块
+    其他参见下面
+- 2 . minSize 最小尺寸必须大于此值，默认30000B
+- 3 . minChunks 其他entry引用次数大于此值，默认1;个人理解minChunks指的是被不同entry引入的次数;为1时，适合分离 node_moudles 里的第三方库
+- 4 . maxInitialRequests entry文件请求的chunks不应该超过此值（请求过多，耗时）
+- 5 . maxAsyncRequests 异步请求的chunks不应该超过此值
+- 6 . automaticNameDelimiter 自动命名连接符
+- 7 . chunks 值为"initial", "async"（默认） 或 "all"
+> 不配置时再production模式下开启async
+
+production 时默认配置：
+```js
+optimization: { 
+  splitChunks: { 
+    chunks: "async", 
+    minSize: 30000, 
+    minChunks: 1, 
+    maxAsyncRequests: 5, 
+    maxInitialRequests: 3, 
+    automaticNameDelimiter: '~', 
+    name: true, 
+    cacheGroups: { 
+      vendors: { 
+        test: /[\\/]node_modules[\\/]/, 
+        priority: -10 
+      }, 
+      //cacheGroups重写继承配置，设为false不继承 
+      default: {
+        minChunks: 2,
+        priority: -20, 
+        reuseExistingChunk: true 
+      }
+    } 
+  } 
+}
+```
+自定义配置,请在production模式下配置。参考[webpack4入门5——插件](https://www.jianshu.com/p/3066d96aec8b)
+```js
+optimization: {
+  // 打包 公共文件
+  splitChunks: {
+    cacheGroups: {
+      // node_modules内的依赖库 
+      vendor: {
+        chunks: "all", 
+        test: /[\\/]node_modules[\\/]/, 
+        name: "vendor", 
+        minChunks: 1, //被不同entry引用次数(import),1次的话没必要提取 
+        maxInitialRequests: 5, 
+        minSize: 0, 
+        priority: 100, 
+      },
+      // ‘src/util’ 下的js文件 
+      common: {
+        chunks: "all", 
+        test: /[\\/]src[\\/]util[\\/]/,//也可以值文件/[\\/]src[\\/]js[\\/].*\.js/, 
+        name: "common", //生成文件名，依据output规则 
+        minChunks: 2, 
+        maxInitialRequests: 5, 
+        minSize: 0, 
+        priority: 1 
+      }
+    }
+  },
+  // 用来提取 entry chunk 中的 runtime部分函数，形成一个单独的文件，这部分文件不经常变换，方便做缓存。
+  runtimeChunk: {
+    name: 'manifest'
+  }
+}
+```

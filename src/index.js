@@ -1,8 +1,8 @@
-// import _ from 'lodash'
+import _ from 'lodash'
 import './style.css'
 import icon from './icon.png'
-import printMe from './print'
-import { cube } from './math'
+// import printMe from './print'
+import { cube } from './util/math'
 
 if (process.env.NODE_ENV !== 'production') {
   console.log('Looks like we are in development mode!')
@@ -10,8 +10,8 @@ if (process.env.NODE_ENV !== 'production') {
 
 function component() {
   let ele = document.createElement('div')
-  // ele.innerHTML = _.join(['Hello', 'World'], ' ')
-  // ele.classList.add('hello')
+  ele.innerHTML = _.join(['Hello', 'World'], ' ')
+  ele.classList.add('hello')
 
   // 创建一个图片，并将它插入到现有的div中
   let image = new Image()
@@ -29,11 +29,11 @@ function component() {
   return ele
 }
 
-// document.body.appendChild(component())
+document.body.appendChild(component())
 
 // 当 print.js 改变导致页面重新渲染时，重新获取渲染的元素
-let element = component()
-document.body.appendChild(element)
+// let element = component()
+// document.body.appendChild(element)
 
 // if (module.hot) {
 //   module.hot.accept('./print.js', () => {
