@@ -17,13 +17,18 @@ function component() {
   let image = new Image()
   image.src = icon
   ele.appendChild(image)
+  ele.addEventListener('click', () => import(/* webpackChunkName: "print" */'./print').then(module => {
+    module.default()
+  }))
 
   let btn = document.createElement('button')
   btn.innerHTML = [
     'Click Me And Print',
     '5 cubed is equal to ' + cube(5) 
   ].join('\n\n')
-  btn.addEventListener('click', printMe)
+  btn.addEventListener('click', () => import(/* webpackChunkName: "print" */'./print').then(module => {
+    module.default()
+  }))
   ele.appendChild(btn)
 
   return ele

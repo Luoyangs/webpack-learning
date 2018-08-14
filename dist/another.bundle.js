@@ -1,2 +1,0 @@
-(window.webpackJsonp=window.webpackJsonp||[]).push([[4],{12:function(o,n,e){"use strict";e.r(n);var c=e(0),s=e.n(c),w=e(1);console.log(s.a.join(["Another","Module"],"---"),Object(w.a)(3))}},[[12,2,0,1]]]);
-//# sourceMappingURL=another.bundle.js.map

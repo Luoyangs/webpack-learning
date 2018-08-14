@@ -7,7 +7,7 @@ const devMode = process.env.NODE_ENV !== 'production'
 module.exports = {
   entry: {
     app: './src/index.js',
-    another: './src/another-module.js'
+    // another: './src/another-module.js'
   },
   output: {
     filename: '[name].bundle.js',
