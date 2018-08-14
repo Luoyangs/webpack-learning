@@ -1,12 +1,17 @@
-import _ from 'lodash'
+// import _ from 'lodash'
 import './style.css'
 import icon from './icon.png'
 import printMe from './print'
+import { cube } from './math'
+
+if (process.env.NODE_ENV !== 'production') {
+  console.log('Looks like we are in development mode!')
+}
 
 function component() {
   let ele = document.createElement('div')
-  ele.innerHTML = _.join(['Hello', 'World'], ' ')
-  ele.classList.add('hello')
+  // ele.innerHTML = _.join(['Hello', 'World'], ' ')
+  // ele.classList.add('hello')
 
   // 创建一个图片，并将它插入到现有的div中
   let image = new Image()
@@ -14,7 +19,10 @@ function component() {
   ele.appendChild(image)
 
   let btn = document.createElement('button')
-  btn.innerHTML = 'Click Me And Print'
+  btn.innerHTML = [
+    'Click Me And Print',
+    '5 cubed is equal to ' + cube(5) 
+  ].join('\n\n')
   btn.addEventListener('click', printMe)
   ele.appendChild(btn)
 
@@ -27,12 +35,12 @@ function component() {
 let element = component()
 document.body.appendChild(element)
 
-if (module.hot) {
-  module.hot.accept('./print.js', () => {
-    console.log('Accetping the updated printMe module')
-    // printMe()
-    document.body.removeChild(element)
-    element = component()
-    document.body.appendChild(element)
-  })
-}
+// if (module.hot) {
+//   module.hot.accept('./print.js', () => {
+//     console.log('Accetping the updated printMe module')
+//     // printMe()
+//     document.body.removeChild(element)
+//     element = component()
+//     document.body.appendChild(element)
+//   })
+// }

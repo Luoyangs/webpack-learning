@@ -381,3 +381,183 @@ if (module.hot) {
   })
 }
 ```
+
+## 7. Tree Shaking
+tree shaking 是一个术语，通常用于描述移除 JavaScript 上下文中的未引用代码(dead-code)。它依赖于 ES2015 模块系统中的静态结构特性，例如 import 和 export。这个术语和概念实际上是兴起于 ES2015 模块打包工具 rollup。
+
+在src下面创建一个math.js文件，定义两个方法并export出来
+```js
+export function square(x) {
+  return x * x
+}
+
+export function cube(x) {
+  return x * x * x
+}
+```
+然后在index.js里面引入cube方法，（square就属于未引用代码，也就是说应该删掉未被引用的export）
+```js
+import _ from 'lodash';
+import { cube } from './math.js';
+
+  function component() {
+  var element = document.createElement('div');
+  var element = document.createElement('pre');
+
+  // lodash 是由当前 script 脚本 import 导入进来的
+  element.innerHTML = _.join(['Hello', 'webpack'], ' ');
+  element.innerHTML = [
+    'Hello webpack!',
+    '5 cubed is equal to ' + cube(5)
+  ].join('\n\n');
+
+    return element;
+  }
+
+  document.body.appendChild(component());
+```
+注意，我们并未从 src/math.js 模块中 import 导入 square 方法。这个功能是所谓的“未引用代码(dead code)”，也就是说，应该删除掉未被引用的 export。现在让我们运行我们的npm 脚本 npm run build，并检查输出的 bundle：
+
+### 7.1 将文件标记为无副作用(side-effect-free)
+在一个纯粹的 ESM 模块世界中，识别出哪些文件有副作用很简单。然而，我们的项目无法达到这种纯度，所以，此时有必要向 webpack 的 compiler 提供提示哪些代码是“纯粹部分”.在package.json里面配置
+```json
+{
+  "name": "your-project",
+  "sideEffects": false
+}
+```
+如果你的代码确实有一些副作用，那么可以改为提供一个数组：
+```json
+{
+  "name": "your-project",
+  "sideEffects": [
+    "./src/math.js"
+  ]
+}
+```
+注意，任何导入的文件都会受到 tree shaking 的影响。这意味着，如果在项目中使用类似 css-loader 并导入 CSS 文件，则需要将其添加到 side effect 列表中，以免在生产模式中无意中将它删除：
+```
+{
+  "name": "your-project",
+  "sideEffects": [
+    "./src/math.js",
+    "*.css"
+  ]
+}
+```
+
+### 7.2 压缩输出
+通过如上方式，我们已经可以通过 import 和 export 语法，找出那些需要删除的“未使用代码(dead code)”，然而，我们不只是要找出，还需要在 bundle 中删除它们。为此，我们将使用 -p(production) 这个 webpack 编译标记，来启用 uglifyjs 压缩插件。
+
+> --optimize-minimize 标记也会在 webpack 内部调用 UglifyJsPlugin
+
+在webpack.config.js中配置
+```
+mode: "production"
+```
+
+## 8. 生产环境构建
+开发环境(development)和生产环境(production)的构建目标差异很大。在开发环境中，我们需要具有强大的、具有实时重新加载(live reloading)或热模块替换(hot module replacement)能力的 source map 和 localhost server。而在生产环境中，我们的目标则转向于关注更小的 bundle，更轻量的 source map，以及更优化的资源，以改善加载时间。由于要遵循逻辑分离，我们通常建议为每个环境编写彼此独立的 webpack 配置。
+
+### 8.1 配置分离
+利用webpack-merge进行配置分离
+```
+npm i webpack-merge -D
+```
+
+新建webpack.config.base.js、webpack.config.dev.js、webpack.config.prod.js三个单独的文件
+
+其中webpack.config.base.js里面的配置如下
+```js
+const path = require('path')
+const CleanWebpackPlugin = require('clean-webpack-plugin')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+
+module.exports = {
+  entry: {
+    app: './src/index.js'
+  },
+  output: {
+    filename: '[name].bundle.js',
+    path: path.join(__dirname, 'dist')
+  },
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader']
+      },
+      {
+        test: /\.(png|svg|jpg|jpeg|gif)$/,
+        use: ['file-loader']
+      }
+    ]
+  },
+  plugins: [
+    new CleanWebpackPlugin(['dist']),
+    new HtmlWebpackPlugin({
+      title: 'Base Title'
+    })
+  ]
+}
+```
+
+其中webpack.config.dev.js里面的配置如下
+```js
+const merge = require('webpack-merge')
+const baseConfig = require('./webpack.config.base')
+
+module.exports = merge(baseConfig, {
+  devtool: 'inline-source-map',
+  devServer: {
+    contentBase: './dist'
+  }
+})
+```
+
+其中webpack.config.prod.js里面的配置如下
+```js
+const merge = require('webpack-merge')
+const UglifyJSPlugin = require('uglifyjs-webpack-plugin')
+const baseConfig = require('./webpack.config.base')
+
+module.exports = merge(baseConfig, {
+  devtool: 'source-map',
+  plugins: [
+    new UglifyJSPlugin({
+      sourceMap: true
+    })
+  ]
+})
+```
+
+修改NPM scripts
+```json
+"start": "webpack-dev-server --mode=development --open --config webpack.config.dev.js", // 针对开发环境的
+"build": "webpack --mode=production --config webpack.config.prod.js", // 针对生产环境
+```
+
+避免在生产中使用 inline-*** 和 eval-***，因为它们可以增加 bundle 大小，并降低整体性能。
+
+### 8.2 指定环境
+许多library将通过与process.env.NODE_ENV环境变量关联，已决定library中应该引用哪些内容。例如，当不处于生产环境时，某些library为了使调试变得容易，可能会添加额外的日志记录和测试。其实当process.env.NODE_ENV === 'production'时，一些library将对某些代码进行优化，从而删除或者添加一些重要代码，我们可以使用webpack内置DefinePlugin为所有的依赖定义这个变量
+
+在webpack.config.prod.js里面添加
+```js 
+const webpack = require('webpack')
+...
+plugins: [
+  ...
+  new webpack.DefinePlugin({
+    'process.env.NODE_ENV': JSON.stringify('production')
+  })
+]
+```
+技术上讲，NODE_ENV 是一个由 Node.js 暴露给执行脚本的系统环境变量。通常用于决定在开发环境与生产环境(dev-vs-prod)下，服务器工具、构建脚本和客户端 library 的行为。然而，与预期不同的是，无法在构建脚本 webpack.config.js 中，将 process.env.NODE_ENV 设置为 "production"，请查看 #2537。因此，例如 process.env.NODE_ENV === 'production' ? '[name].[hash].bundle.js' : '[name].bundle.js' 这样的条件语句，在 webpack 配置文件中，无法按照预期运行。
+
+在src/index.js里面添加
+```js
+if (process.env.NODE_ENV !== 'production') {
+  console.log('Looks like we are in development mode!')
+}
+```
