@@ -683,3 +683,100 @@ btn.addEventListener('click', () => import(/* webpackChunkName: "print" */'./pri
 }))
 ```
 注意当调用 ES6 模块的 import() 方法（引入模块）时，必须指向模块的 .default 值，因为它才是 promise 被处理后返回的实际的 module 对象。 
+
+## 11. 缓存
+### 11.1 输出文件的文件名
+通过使用 output.filename 进行文件名替换，可以确保浏览器获取到修改后的文件。[hash] 替换可以用于在文件名中包含一个构建相关(build-specific)的 hash，但是更好的方式是使用 [chunkhash] 替换，在文件名中包含一个 chunk 相关(chunk-specific)的哈希。
+
+在webpack.config.base.js中配置entry
+```js
+filename: '[name].[chunkhash].js'
+```
+
+### 11.2 提取模板(Extracting Boilerplate)
+在webpack.config.prod.js里面配置optimization.runtimeChunk
+```js
+// 用来提取 entry chunk 中的 runtime部分函数，形成一个单独的文件，这部分文件不经常变换，方便做缓存。
+runtimeChunk: {
+  name: 'manifest'
+}
+```
+
+将第三方库(library)（例如 lodash 或 react）提取到单独的 vendor chunk 文件中，是比较推荐的做法，这是因为，它们很少像本地的源代码那样频繁修改。因此通过实现以上步骤，利用客户端的长效缓存机制，可以通过命中缓存来消除请求，并减少向服务器获取资源，同时还能保证客户端代码和服务器端代码版本一致。这可以通过使用新的 entry(入口) 起点，以及再额外配置一个 CommonsChunkPlugin 实例的组合方式来实现：
+
+在webpack.config.base.js里面配置entry
+```js
+entry: {
+  main: './src/index.js',
+  vendor: [
+    'lodash'
+  ]
+}
+```
+
+当文件内容发生变化时，生产文件对应的编译hash才会发生变化，在webpack.config.prod.js里面配置plugins
+```js
+new webpack.HashedModuleIdsPlugin()
+```
+
+## 12. 渐进式网络应用程序
+渐进式网络应用程序(Progressive Web Application - PWA)，是一种可以提供类似于原生应用程序(native app)体验的网络应用程序(web app)。PWA 可以用来做很多事。其中最重要的是，在离线(offline)时应用程序能够继续运行功能。这是通过使用名为 Service Workers 的网络技术来实现的。
+
+### 12.1 现在我们并没有离线环境下运行过
+到目前为止，我们一直是直接查看本地文件系统的输出结果。通常情况下，真正的用户是通过网络访问网络应用程序；用户的浏览器会与一个提供所需资源（例如，.html, .js 和 .css 文件）的服务器通讯。
+
+那么让我们来使用一个简易服务器，搭建出我们所需的离线体验。我们将使用 http-server package 包：
+```
+npm install http-server -D
+```
+还要修改 package.json 的 scripts 部分，来添加一个 start 脚本：
+```json
+"start": "http-server dist"
+```
+如果你之前没有操作过，请运行命令 npm run build 来构建你的项目。然后运行命令 npm start。
+
+如果你打开浏览器访问 http://localhost:8080 (即 http://127.0.0.1)，你应该会看到在 dist 目录创建出服务，并可以访问 webpack 应用程序。如果停止服务器然后刷新，则 webpack 应用程序不再可访问。
+
+这就是我们最终要改变的现状。在本章结束时，我们应该要实现的是，停止服务器然后刷新，仍然可以查看应用程序正常运行。
+
+### 12.2 添加Workbox
+添加 workbox-webpack-plugin 插件
+```
+npm i workbox-webpack-plugin -D
+```
+并调整 webpack.config.prod.js 文件：
+```js
+const WorkboxWebpackPlugin = require('workbox-webpack-plugin')
+
+...
+plugins: [
+  ...
+  new WorkboxWebpackPlugin.GenerateSW({
+    // 这里的选项帮助serverWorker快速启动
+    // 不允许遗留任何旧的serviceWorker
+    clientsClaim: true,
+    skipWaiting: true
+  })
+]
+```
+有了 Workbox，我们再看下执行 npm run build。现在你可以看到，生成了 2 个额外的文件：sw.js 和体积很大的 precache-manifest.b5ca1c555e832d6fbf9462efd29d27eb.js。sw.js 是 Service Worker 文件，precache-manifest.b5ca1c555e832d6fbf9462efd29d27eb.js 是 sw.js 引用的文件，所以它也可以运行。可能在你本地生成的文件会有所不同；但是你那里应该会有一个 sw.js 文件。
+
+### 12.3 注册我们的serviceWorker
+在src/index.js里面
+```js
+...
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(registion => {
+      console.log('SW registed:', registion)
+    }).catch(err => {
+      console.log('SW registion failed:', err)
+    })
+  })
+}
+```
+再次运行 npm build build 来构建包含注册代码版本的应用程序。然后用 npm start 启动服务。访问 http://localhost:8080 并查看 console 控制台。
+
+现在来进行测试。停止服务器并刷新页面。如果浏览器能够支持 Service Worker，你应该可以看到你的应用程序还在正常运行。然而，服务器已经停止了服务，此刻是 Service Worker 在提供服务。
+
+> 友情提示： 需要屏蔽optimization.runtimeChunk配置，否则无法生效

@@ -10,7 +10,7 @@ module.exports = {
     // another: './src/another-module.js'
   },
   output: {
-    filename: '[name].bundle.js',
+    filename: '[name].[chunkhash].js',
     path: path.join(__dirname, 'dist')
   },
   module: {
