@@ -1,17 +1,49 @@
 const webpack = require('webpack')
 const merge = require('webpack-merge')
-const UglifyJSPlugin = require('uglifyjs-webpack-plugin')
+const path = require('path')
 const baseConfig = require('./webpack.config.base')
 const WorkboxWebpackPlugin = require('workbox-webpack-plugin')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const CleanWebpackPlugin = require('clean-webpack-plugin')
+
+const posix = (filename) => path.posix.join('static', filename)
 
 module.exports = merge(baseConfig, {
   devtool: 'source-map',
+  output: {
+    path: path.join(__dirname, 'dist'),
+    filename: posix('js/[name].[chunkhash].js'),
+    chunkFilename: posix('js/[id].[chunkhash].js')
+  },
+  module: {
+    rules: [
+      {
+        test: /\.(c|sc)ss$/,
+        use: [
+          MiniCssExtractPlugin.loader, // replace ExtractTextPlugin.extract({..})
+          'css-loader',
+          {
+            loader: 'postcss-loader',
+            options: {
+              ident: 'postcss',
+              sourceMap: true,
+              plugins: [
+                require('autoprefixer')()
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
   plugins: [
-    new UglifyJSPlugin({
-      sourceMap: true
-    }),
     new webpack.DefinePlugin({
       'process.env.NODE_ENV': JSON.stringify('production')
+    }),
+    new CleanWebpackPlugin(['dist']),
+    new MiniCssExtractPlugin({
+      filename: posix('css/[name].[contenthash].css'),
+      chunkFilename: posix('css/[id].[contenthash].css')
     }),
     // 当文件内容发生变化时，生产文件对应的编译hash才会发生变化
     new webpack.HashedModuleIdsPlugin(),
@@ -49,8 +81,8 @@ module.exports = merge(baseConfig, {
       }
     },
     // 用来提取 entry chunk 中的 runtime部分函数，形成一个单独的文件，这部分文件不经常变换，方便做缓存。
-    // runtimeChunk: {
-    //   name: 'manifest'
-    // }
+    runtimeChunk: {
+      name: 'manifest'
+    }
   }
 })

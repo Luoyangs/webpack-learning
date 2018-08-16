@@ -780,3 +780,132 @@ if ('serviceWorker' in navigator) {
 现在来进行测试。停止服务器并刷新页面。如果浏览器能够支持 Service Worker，你应该可以看到你的应用程序还在正常运行。然而，服务器已经停止了服务，此刻是 Service Worker 在提供服务。
 
 > 友情提示： 需要屏蔽optimization.runtimeChunk配置，否则无法生效
+
+## 13. Typescript
+TypeScript 是 JavaScript 的超集，为其增加了类型系统，可以编译为普通的 JavaScript 代码。这篇指南里我们将会学习 webpack 是如何跟 TypeScript 进行集成。
+
+### 13.1 基础安装
+安装编译器和loader
+```
+npm install --save-dev typescript ts-loader
+```
+
+安装ts配置文件tsconfig.json
+```json
+{
+  "compilerOptions": {
+    "outDir": "./dist/",
+    "noImplicitAny": true,
+    "module": "es6",
+    "target": "es5",
+    "jsx": "react",
+    "allowJs": true,
+    "sourceMap": true
+  }
+}
+```
+配置webpack.config.js
+```js
+rules: [
+  {
+    test: /\.tsx?$/,
+    use: 'ts-loader',
+    exclude: /node_modules/
+  }
+]
+...
+resolve: {
+  extensions: ['ts', 'tsx', '.js']
+}
+```
+
+### 13.2 使用第三方库
+当从 npm 安装第三方库时，一定要牢记同时安装这个库的类型声明文件。你可以从 TypeSearch 中找到并安装这些第三方库的类型声明文件。
+
+举个例子，如果想安装 lodash 这个库的类型声明文件，我们可以运行下面的命令：
+```
+npm install --save-dev @types/lodash
+```
+
+### 13.3 导入其他资源
+要在 TypeScript 里使用非代码资源，我们需要告诉 TypeScript 如何兼容这些导入类型。那么首先，我们需要在项目里创建 custom.d.ts 文件，这个文件用来编写自定义的类型声明。让我们将 .svg 文件进行声明设置：
+```ts
+declare module "*.svg" {
+  const content: any;
+  export default content;
+}
+```
+这里，我们通过指定任何以 .svg 结尾的导入，并将模块的 content 定义为 any，将 SVG 声明一个新的模块。我们可以通过将类型定义为字符串，来更加显式地将它声明为一个 url。同样的理念适用于其他资源，包括 CSS, SCSS, JSON 等。
+
+## 14. [bug]webpack-dev-server 在改变css的时候不能同步刷新浏览器
+问题描述：
+
+使用webpack-dev-server做webpack的HotModuleReplacementPlugin，不能设置extract-text-webpack-plugin(webpack 3以下，webpack4是用mini-css-extract-plugin替代)，只能在生成环境使用
+
+开发环境webpack.config.dev.js配置如下：
+```js
+module: {
+  rules: [
+    {
+      test: /\.(c|sc)ss$/,
+      use: [
+        'style-loader',
+        'css-loader',
+        {
+          loader: 'postcss-loader',
+          options: {
+            ident: 'postcss',
+            sourceMap: true,
+            plugins: [
+              require('autoprefixer')()
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+生产环境webpack.config.prod.js配置如下：
+```js
+const CleanWebpackPlugin = require('clean-webpack-plugin')
+const posix = (filename) => path.posix.join('static', filename)
+
+...
+output: {
+  path: path.join(__dirname, '../dist'),
+  filename: posix('js/[name].[chunkhash].js'),
+  chunkFilename: posix('js/[id].[chunkhash].js')
+},
+module: {
+  rules: [
+    {
+      test: /\.(c|sc)ss$/,
+      use: [
+        MiniCssExtractPlugin.loader, // replace ExtractTextPlugin.extract({..})
+        'css-loader',
+        {
+          loader: 'postcss-loader',
+          options: {
+            ident: 'postcss',
+            sourceMap: true,
+            plugins: [
+              require('autoprefixer')()
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
+...
+plugins: [
+  ...
+  new MiniCssExtractPlugin({
+    filename: posix('css/[name].[contenthash].css'),
+    chunkFilename: posix('css/[id].[contenthash].css')
+  }),
+  // 清空dist目录，并删除该目录
+  new CleanWebpackPlugin(['dist']),
+]
+```
