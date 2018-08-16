@@ -4,8 +4,9 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 
 module.exports = {
   entry: {
-    app: './src/index.js',
+    // app: './src/index.js',
     // another: './src/another-module.js'
+    main: './src/main.ts'
   },
   output: {
     filename: '[name].[chunkhash].js',
@@ -16,8 +17,16 @@ module.exports = {
       {
         test: /\.(png|svg|jpg|jpeg|gif)$/,
         use: ['file-loader']
+      },
+      {
+        test: /\.tsx?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/
       }
     ]
+  },
+  resolve: {
+    extensions: ['.ts', '.tsx', '.js']
   },
   plugins: [
     new CleanWebpackPlugin(['dist']),

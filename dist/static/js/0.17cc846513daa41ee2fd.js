@@ -1,2 +1,0 @@
-(window.webpackJsonp=window.webpackJsonp||[]).push([[0],{OMi8:function(e,o,r){},tjUo:function(e,o,r){"use strict";r.r(o);var i=r("LvDl"),n=r.n(i);r("OMi8");"serviceWorker"in navigator&&navigator.serviceWorker.register("/service-worker.js").then(e=>{console.log("serviceWorker registed:",e)}).catch(e=>{console.log("serviceWorker registion failed:",e)}),document.body.appendChild(function(){let e=document.createElement("div");return e.innerHTML=n.a.join(["Hello","World"]," "),e.classList.add("hello"),e}())}},[["tjUo",2,1]]]);
-//# sourceMappingURL=0.17cc846513daa41ee2fd.js.map

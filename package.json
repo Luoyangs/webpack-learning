@@ -27,6 +27,7 @@
   },
   "homepage": "https://github.com/Luoyangs/webpack-learning#readme",
   "devDependencies": {
+    "@types/node": "^10.7.1",
     "clean-webpack-plugin": "^0.1.19",
     "css-loader": "^1.0.0",
     "express": "^4.16.3",
@@ -36,6 +37,8 @@
     "lodash": "^4.17.10",
     "mini-css-extract-plugin": "^0.4.1",
     "style-loader": "^0.22.1",
+    "ts-loader": "^4.4.2",
+    "typescript": "^3.0.1",
     "webpack": "^4.16.5",
     "webpack-cli": "^3.1.0",
     "webpack-dev-middleware": "^3.1.3",

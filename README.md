@@ -787,20 +787,61 @@ TypeScript 是 JavaScript 的超集，为其增加了类型系统，可以编译
 ### 13.1 基础安装
 安装编译器和loader
 ```
-npm install --save-dev typescript ts-loader
+npm install --save-dev typescript @types/node ts-loader
 ```
 
 安装ts配置文件tsconfig.json
 ```json
 {
+  "include": [
+    "src/*",
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ],
   "compilerOptions": {
-    "outDir": "./dist/",
-    "noImplicitAny": true,
-    "module": "es6",
-    "target": "es5",
-    "jsx": "react",
+    // types option has been previously configured
+    "types": [
+      // add node as an option
+      "node"
+    ],
+    // typeRoots option has been previously configured
+    "typeRoots": [
+      // add path to @types
+      "node_modules/@types"
+    ],
+    // 以严格模式解析
+    "strict": true,
+    "strictPropertyInitialization": false,
+    // 在.tsx文件里支持JSX
+    "jsx": "preserve",
+    // 使用的JSX工厂函数
+    "jsxFactory": "h",
+    // 允许从没有设置默认导出的模块中默认导入
+    "allowSyntheticDefaultImports": true,
+    // 启用装饰器
+    "experimentalDecorators": true,
+    "strictFunctionTypes": false,
+    // 允许编译javascript文件
     "allowJs": true,
-    "sourceMap": true
+    // 采用的模块系统
+    "module": "esnext",
+    // 编译输出目标 ES 版本
+    "target": "es5",
+    // 如何处理模块
+    "moduleResolution": "node",
+    // 在表达式和声明上有隐含的any类型时报错
+    "noImplicitAny": true,
+    "lib": [
+      "dom",
+      "es5",
+      "es6",
+      "es7",
+      "es2015.promise"
+    ],
+    "sourceMap": true,
+    "pretty": true
   }
 }
 ```
